@@ -1,0 +1,38 @@
+# Type: struct or map
+Type="struct"
+# MethodName: (optional) method name of the validator
+MethodName="Validate"
+
+# Validators.XXX: Validator information for struct XXX
+[Validators.Address]
+# Package: Validator package name
+Package = "example"
+# Name: (optional) struct identifier. key name is substituted as default
+Name = "Address"
+# Dir: (optional) Directory to output validator source code. Package name is default
+# FileName: (optional) Validator file name. "[Package]_validator.go" is the default
+FileName = "address_validator.go"
+# FileMode: (optional) file mode of the validator source code 0644 is default
+# Import: (optional) Add additional packages when validator source code imports them
+Import = []
+# Properties: validators for each field of struct
+Properties.Street.Type = "string"
+Properties.Street.Required = true
+Properties.Street.Length = [5,50]
+Properties.People.Type = "int"
+Properties.People.Required = true
+Properties.People.In = {Int=[1,2,3]}
+Properties.Income.Type = "float"
+Properties.Income.Required = true
+Properties.Income.In = {Float=[1.1,2.2,3.3]}
+Properties.Food.Type = "string"
+Properties.Food.Required = true
+Properties.Food.In = {String=["Cheeze", "Milk", "Meat"]}
+Properties.State.Type = "string"
+Properties.State.Required = true
+Properties.State.match = "^[A-Z]{2}$"
+Properties.Mail.Type = "string"
+Properties.Mail.Required = true
+Properties.Mail.Email = true
+
+
