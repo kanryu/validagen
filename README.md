@@ -30,15 +30,13 @@ You will write a toml as `example.toml`.
 ```toml
 # Type: struct or map
 Type="struct"
-# MethodName: (optional) method name of the validator
-MethodName="Validate"
+# MethodName: (optional) method name of the validator. Validate is default
 
 # Validators.XXX: Validator information for struct XXX
 [Validators.Address]
 # Package: Validator package name
 Package = "example"
 # Name: (optional) struct identifier. key name is substituted as default
-Name = "Address"
 # Dir: (optional) Directory to output validator source code. Package name is default
 # FileName: (optional) Validator file name. "[Package]_validator.go" is the default
 FileName = "address_validator.go"
