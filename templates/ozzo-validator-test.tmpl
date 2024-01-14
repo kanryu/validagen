@@ -13,6 +13,7 @@ func Test{{.Name}}_{{.MethodName}}(t *testing.T) {
 		a       {{.Name}}
 		wantErr bool
 	}{
+		{{/** OK TEST */ -}}
 		{wantErr: false, name: "OK", a: {{.Name}}{
 {{- $first := ""}}
 {{- range $key, $value := .TestData.Valid}}
@@ -23,6 +24,7 @@ func Test{{.Name}}_{{.MethodName}}(t *testing.T) {
 	{{- with .Float}}{{range .}}{{.}}{{end}}{{end}}
 {{- end}}}},
 {{- range $key1, $value1 := .TestData.Invalid}}
+		{{/** NG TESTs, Add one wrong value into the correct data set */ -}}
 		{wantErr: true, name: "NG for {{$key1}}", a: {{$name}}{
 	{{- $first := ""}}
 	{{- range $key2, $value2 := $valid}}
