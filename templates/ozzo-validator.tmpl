@@ -10,7 +10,7 @@ import (
 )
 
 // Validate validater for {{.Name}} struct
-func (a {{.Name}}) {{.MethodName}}() error {
+func ({{.Receiver}} {{.Name}}) {{.MethodName}}() error {
 	{{- /* validation.ValidateStruct() -> */}}
 	return validation.ValidateStruct(&a,
 {{- range $key, $p := .Properties}}

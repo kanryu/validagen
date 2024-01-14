@@ -6,33 +6,42 @@ import (
 	"io/fs"
 	"log/slog"
 	"os"
+	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/BurntSushi/toml"
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 	"github.com/go-ozzo/ozzo-validation/v4/is"
+	"github.com/iancoleman/strcase"
+	"github.com/samber/lo"
 )
 
 const OZZO_VALIDATOR_TEMPLATE string = "templates/ozzo-validator.tmpl"
+const OZZO_VALIDATOR_TEST_TEMPLATE string = "templates/ozzo-validator-test.tmpl"
 
 // Project information to generate validators. Generated from Validator Toml
 type ValidateProject struct {
-	Type       string
-	MethodName string
-	Template   string
-	Validators map[string]ValidateStruct
+	Type         string
+	MethodName   string
+	Template     string
+	TemplateTest string
+	ForTest      bool
+	Validators   map[string]ValidateStruct
 }
 
 // Information on the struct that generates the validator and the validator go codes
 type ValidateStruct struct {
 	Package    string
 	Name       string
+	Receiver   string
 	Dir        string
 	FileName   string
 	FileMode   int
 	Import     []string
 	MethodName string
 	Properties map[string]ValidateProperty
+	TestData   TestData
 }
 
 // Validator settings to apply to a field
@@ -40,6 +49,12 @@ type ValidateProperty struct {
 	Name string
 	Type string
 	ValidateRule
+}
+
+type TestData struct {
+	Testing bool
+	Valid   map[string]TypedList
+	Invalid map[string]TypedList
 }
 
 type TypedList struct {
@@ -140,12 +155,36 @@ func ParseToml(tomlPath string) (*ValidateProject, error) {
 }
 
 // Generate validators defined in ValidatorProject.Validators in the specified directory
-func (vp ValidateProject) Generate() error {
-	tmpl, err := initTemplate(vp.Template)
+func (vp *ValidateProject) Generate() error {
+	template_path := vp.Template
+	if template_path == "" {
+		template_path = OZZO_VALIDATOR_TEMPLATE
+	}
+	// generate validator go files
+	err := vp.GenerateWithTemplate(template_path)
+	if err != nil {
+		return err
+	}
+	// test go files
+	vp.ForTest = true
+	template_path = vp.TemplateTest
+	if template_path == "" {
+		template_path = OZZO_VALIDATOR_TEST_TEMPLATE
+	}
+	// generate test go files
+	err = vp.GenerateWithTemplate(template_path)
+	return err
+}
+
+func (vp *ValidateProject) GenerateWithTemplate(template_path string) error {
+	tmpl, err := initTemplate(template_path)
 	if err != nil {
 		return err
 	}
 	for name, vs := range vp.Validators {
+		if vp.ForTest && !vs.TestData.Testing {
+			continue
+		}
 		validator_path, filemode := vp.prepare(&vs, name)
 		vp.prepareIsValidators(&vs)
 		// generate validator as a file
@@ -166,10 +205,8 @@ func (vp ValidateProject) Generate() error {
 
 // initTemplate Initialize the template for validator generation
 func initTemplate(template_path string) (*template.Template, error) {
-	if template_path == "" {
-		template_path = OZZO_VALIDATOR_TEMPLATE
-	}
-	tmpl := template.New(template_path)
+	basename := filepath.Base(template_path)
+	tmpl := template.New(basename)
 	funcs := template.FuncMap{
 		"isValidNumericList": isValidNumericList,
 		"isValidIntList":     isValidIntList,
@@ -177,8 +214,9 @@ func initTemplate(template_path string) (*template.Template, error) {
 		"isValidStringList":  isValidStringList,
 	}
 	tmpl.Funcs(funcs)
-	if template_path == OZZO_VALIDATOR_TEMPLATE {
-		data, err := AssetString(OZZO_VALIDATOR_TEMPLATE)
+	assetTemplates := []string{OZZO_VALIDATOR_TEMPLATE, OZZO_VALIDATOR_TEST_TEMPLATE}
+	if lo.Contains(assetTemplates, template_path) {
+		data, err := AssetString(template_path)
 		if err != nil {
 			return nil, err
 		}
@@ -197,9 +235,15 @@ func initTemplate(template_path string) (*template.Template, error) {
 }
 
 // prepare Specify the initial value of ValidateStruct
-func (vp ValidateProject) prepare(vs *ValidateStruct, name string) (string, fs.FileMode) {
+func (vp *ValidateProject) prepare(vs *ValidateStruct, name string) (string, fs.FileMode) {
 	if vs.Name == "" {
 		vs.Name = name
+	}
+	if vs.Receiver == "" {
+		vs.Receiver = strings.ToLower(vs.Name[0:1])
+	}
+	if vs.Package == "" {
+		vs.Package = strings.ToLower(vs.Name)
 	}
 	if vs.MethodName == "" {
 		vs.MethodName = vp.MethodName
@@ -211,7 +255,10 @@ func (vp ValidateProject) prepare(vs *ValidateStruct, name string) (string, fs.F
 	if vs.Dir != "" {
 		validator_dir = vs.Dir
 	}
-	validator_filename := fmt.Sprintf("%s_validator.go", vs.Package)
+	validator_filename := fmt.Sprintf("%s_validator.go", strcase.ToSnake(vs.Name))
+	if vp.ForTest {
+		validator_filename = fmt.Sprintf("%s_validator_test.go", strcase.ToSnake(vs.Name))
+	}
 	if vs.FileName != "" {
 		validator_filename = vs.FileName
 	}

@@ -4,31 +4,48 @@ Type="struct"
 
 # Validators.XXX: Validator information for struct XXX
 [Validators.Address]
-# Package: Validator package name
-Package = "example"
 # Name: (optional) struct identifier. key name is substituted as default
+# Package: (optional) Validator package name. strings.ToLower(Name) as default
+Package = "example"
+# Receiver: (optional) receiver of the validator method
 # Dir: (optional) Directory to output validator source code. Package name is default
-# FileName: (optional) Validator file name. "[Package]_validator.go" is the default
-FileName = "address_validator.go"
+# FileName: (optional) Validator file name. "[ToSnake(Name)]_validator.go" is the default
 # FileMode: (optional) file mode of the validator source code 0644 is default
 # Import: (optional) Add additional packages when validator source code imports them
-Import = []
 # Properties: validators for each field of struct
-Properties.Street.Type = "string"
-Properties.Street.Required = true
-Properties.Street.Length = [5,50]
-Properties.People.Type = "int"
-Properties.People.Required = true
-Properties.People.In = {Int=[1,2,3]}
-Properties.Income.Type = "float"
-Properties.Income.Required = true
-Properties.Income.In = {Float=[1.1,2.2,3.3]}
 Properties.Food.Type = "string"
 Properties.Food.Required = true
 Properties.Food.In = {String=["Cheeze", "Milk", "Meat"]}
-Properties.State.Type = "string"
-Properties.State.Required = true
-Properties.State.match = "^[A-Z]{2}$"
+Properties.Income.Type = "float"
+Properties.Income.Required = true
+Properties.Income.In = {Float=[1.1,2.2,3.3]}
 Properties.Mail.Type = "string"
 Properties.Mail.Required = true
 Properties.Mail.Email = true
+Properties.People.Type = "int"
+Properties.People.Required = true
+Properties.People.In = {Int=[1,2,3]}
+Properties.State.Type = "string"
+Properties.State.Required = true
+Properties.State.match = "^[A-Z]{2}$"
+Properties.Street.Type = "string"
+Properties.Street.Required = true
+Properties.Street.Length = [5,50]
+[Validators.Address.TestData]
+# Testing: flag of generating tests
+Testing = true
+# Valid: a map of valid data of the struct
+Valid.Food = {String=["Cheeze"]}
+Valid.Income = {Float=[2.2]}
+Valid.Mail = {String=["ab@example.com"]}
+Valid.People = {Int=[3]}
+Valid.State = {String=["SF"]}
+Valid.Street = {String=["street"]}
+# Invalid: amap of invalid data of the struct.
+# each failed test generate contains on invalid property value
+Invalid.Food = {String=["Cheezended"]}
+Invalid.Income = {Float=[2.233]}
+Invalid.Mail = {String=["nil"]}
+Invalid.People = {Int=[33]}
+Invalid.State = {String=["SFX"]}
+Invalid.Street = {String=["fail"]}
